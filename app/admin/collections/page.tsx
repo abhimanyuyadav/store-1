@@ -1,0 +1,15 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Image as ImagePlus, Save } from "lucide-react";
+import { DATA_CHANGED_EVENT, getCollections, saveCollections } from "@/lib/data";
+import { uploadImageToConvex } from "@/lib/convexFiles";
+import type { Collection } from "@/lib/types";
+
+export default function AdminCollectionsPage() {
+  const [items, setItems] = useState<Collection[]>([]); const [saved, setSaved] = useState(false);
+  useEffect(() => { setItems(getCollections()); const onChange = () => setItems(getCollections()); window.addEventListener(DATA_CHANGED_EVENT, onChange); return () => window.removeEventListener(DATA_CHANGED_EVENT, onChange); }, []);
+  const update = (id: string, patch: Partial<Collection>) => setItems((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
+  const persist = () => { saveCollections(items); setSaved(true); setTimeout(() => setSaved(false), 2500); };
+  return <div className="mx-auto max-w-6xl"><div className="mb-8 flex items-end justify-between"><div><p className="eyebrow">Content</p><h1 className="section-title">Collections</h1><p className="mt-2 text-sm text-[#777870]">Curate the stories shown across the storefront.</p></div><button onClick={persist} className="inline-flex items-center gap-2 rounded-full bg-[#171717] px-5 py-3 text-xs font-bold text-white hover:bg-[#9bb42e] hover:text-black"><Save className="h-4 w-4" />{saved ? "Saved" : "Save changes"}</button></div><div className="grid gap-5 lg:grid-cols-3">{items.map((item) => <article key={item.id} className="overflow-hidden rounded-2xl border border-black/10 bg-white"><div className="relative aspect-[1.2] bg-[#e9e9e3]"><img src={item.image} alt={item.title} className="h-full w-full object-cover" /><label className="absolute bottom-3 right-3 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold shadow"><ImagePlus className="h-4 w-4" />Replace<input type="file" accept="image/*" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; update(item.id, { image: await uploadImageToConvex(file) }); }} /></label></div><div className="space-y-3 p-5"><input value={item.title} onChange={(event) => update(item.id, { title: event.target.value })} className="w-full border-b border-black/10 pb-2 text-lg font-bold outline-none" /><input value={item.subtitle} onChange={(event) => update(item.id, { subtitle: event.target.value })} className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none" /><div className="flex items-center justify-between"><label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={item.published} onChange={(event) => update(item.id, { published: event.target.checked })} /> Published</label><input type="number" value={item.displayOrder} onChange={(event) => update(item.id, { displayOrder: Number(event.target.value) })} className="w-16 rounded-lg border border-black/10 px-2 py-2 text-xs" aria-label="Display order" /></div></div></article>)}</div></div>;
+}

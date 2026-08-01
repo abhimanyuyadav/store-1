@@ -1,0 +1,31 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ArrowRight, Star, RotateCcw, Truck } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import ProductCard from "@/components/ProductCard";
+import { DATA_CHANGED_EVENT, defaultSiteSettings, getCategories, getCollections, getProducts, getSiteSettings } from "@/lib/data";
+import type { Category, Collection, Product } from "@/lib/types";
+
+export default function HomePage() {
+  const [settings, setSettings] = useState(defaultSiteSettings);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const load = () => { setSettings(getSiteSettings()); setProducts(getProducts()); setCategories(getCategories()); setCollections(getCollections().filter((item) => item.published)); setLoading(false); };
+    load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load);
+  }, []);
+  const featured = products.filter((product) => product.featured).slice(0, 4);
+  const displayProducts = featured.length ? featured : products.slice(0, 4);
+  return <div className="min-h-screen bg-[#f7f7f4] text-[#171717]"><Navbar /><main className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+    <section className="relative mt-4 min-h-[620px] overflow-hidden rounded-[2rem] bg-[#eeeee9] sm:mt-6 lg:min-h-[700px]"><img src={settings.heroImage || "/lookbook/01-hero-fashion-model.png"} alt="9TEEN fashion editorial" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-r from-white via-white/70 to-transparent lg:w-[65%]" /><div className="relative flex min-h-[620px] items-end p-7 sm:p-12 lg:min-h-[700px] lg:items-center lg:p-20"><div className="max-w-xl"><p className="eyebrow text-[#68772a]">New season collection</p><h1 className="mt-5 max-w-xl text-5xl font-bold leading-[.92] tracking-[-.07em] sm:text-7xl">Elevate your everyday <em className="font-serif font-normal text-[#9cb52c]">style.</em></h1><p className="mt-6 max-w-md text-base leading-relaxed text-[#555650]">Modern fits. Premium fabrics. Made to move with you.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/products" className="inline-flex items-center gap-3 rounded-full bg-[#c9ef45] px-6 py-3.5 text-xs font-black uppercase tracking-[.08em] shadow-sm transition hover:bg-[#b8df35]">Shop collection <ArrowRight className="h-4 w-4" /></Link><Link href="/collections" className="inline-flex items-center rounded-full border border-black/15 bg-white/70 px-6 py-3.5 text-xs font-bold uppercase tracking-[.08em]">Explore lookbook</Link></div></div></div></section>
+    <section className="grid gap-3 border-b border-black/10 py-8 sm:grid-cols-3 sm:gap-0"><div className="flex items-center gap-3 sm:justify-center sm:border-r sm:border-black/10"><Star className="h-5 w-5 text-[#92aa26]" /><div><p className="text-xs font-bold">Premium quality</p><p className="text-xs text-[#777870]">Made to last</p></div></div><div className="flex items-center gap-3 sm:justify-center sm:border-r sm:border-black/10"><RotateCcw className="h-5 w-5 text-[#92aa26]" /><div><p className="text-xs font-bold">Easy returns</p><p className="text-xs text-[#777870]">7 day returns</p></div></div><div className="flex items-center gap-3 sm:justify-center"><Truck className="h-5 w-5 text-[#92aa26]" /><div><p className="text-xs font-bold">Free shipping</p><p className="text-xs text-[#777870]">On orders over NPR 3,000</p></div></div></section>
+    <section className="py-16"><div className="mb-8 flex items-end justify-between"><div><p className="eyebrow">Find your fit</p><h2 className="section-title">Shop by category</h2></div><Link href="/products" className="text-link">Shop all <ArrowRight className="h-4 w-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-5">{categories.map((category) => <Link href={`/products?cat=${category.id}`} key={category.id} className="group relative aspect-[.82] overflow-hidden rounded-2xl bg-[#e9e9e3]"><img src={category.image || "/lookbook/02-product-oversized-tee.png"} alt={category.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" /><div className="absolute bottom-4 left-4 text-white"><p className="text-sm font-bold">{category.name}</p><p className="mt-1 text-[10px] uppercase tracking-[.14em] text-white/70">Shop now →</p></div></Link>)}</div></section>
+    <section className="pb-16"><div className="mb-8 flex items-end justify-between"><div><p className="eyebrow">The edit</p><h2 className="section-title">Featured products</h2></div><Link href="/products" className="text-link">View all <ArrowRight className="h-4 w-4" /></Link></div>{loading ? <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[1,2,3,4].map((item) => <div key={item} className="aspect-[4/5] animate-pulse rounded-2xl bg-[#e8e8e2]" />)}</div> : <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{displayProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>}</section>
+    <section className="pb-16"><div className="mb-8"><p className="eyebrow">Curated for you</p><h2 className="section-title">Explore collections</h2></div><div className="grid gap-3 md:grid-cols-3">{collections.map((collection) => <Link href={`/products?collection=${collection.id}`} key={collection.id} className="group relative aspect-[1.45] overflow-hidden rounded-2xl"><img src={collection.image} alt={collection.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" /><div className="absolute bottom-5 left-5 text-white"><h3 className="text-xl font-bold">{collection.title}</h3><p className="mt-1 text-xs text-white/75">{collection.subtitle}</p><span className="mt-3 inline-flex rounded-full bg-[#c9ef45] px-3 py-1.5 text-[10px] font-black uppercase text-black">{collection.ctaLabel}</span></div></Link>)}</div></section>
+  </main><Footer /></div>;
+}

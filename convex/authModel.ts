@@ -1,0 +1,10 @@
+import { internalMutation, internalQuery } from "./_generated/server";
+import { v } from "convex/values";
+
+export const findAccountByEmail = internalQuery({ args: { email: v.string() }, handler: async (ctx, { email }) => ctx.db.query("accounts").withIndex("by_email", (q) => q.eq("email", email)).first() });
+export const hasAdmin = internalQuery({ args: {}, handler: async (ctx) => Boolean(await ctx.db.query("accounts").withIndex("by_role", (q) => q.eq("role", "admin")).first()) });
+export const createAccount = internalMutation({ args: { email: v.string(), name: v.string(), phone: v.string(), address: v.string(), city: v.string(), passwordHash: v.string(), role: v.union(v.literal("customer"), v.literal("admin")) }, handler: async (ctx, args) => ctx.db.insert("accounts", { ...args, createdAt: Date.now() }) });
+export const updatePassword = internalMutation({ args: { accountId: v.id("accounts"), passwordHash: v.string() }, handler: async (ctx, { accountId, passwordHash }) => { await ctx.db.patch(accountId, { passwordHash }); } });
+export const createSession = internalMutation({ args: { accountId: v.id("accounts"), tokenHash: v.string(), expiresAt: v.number() }, handler: async (ctx, args) => ctx.db.insert("sessions", { ...args, createdAt: Date.now() }) });
+export const findSession = internalQuery({ args: { tokenHash: v.string() }, handler: async (ctx, { tokenHash }) => { const session = await ctx.db.query("sessions").withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash)).first(); if (!session || session.expiresAt < Date.now()) return null; const account = await ctx.db.get(session.accountId); return account ? { id: account._id, name: account.name, email: account.email, phone: account.phone, address: account.address, city: account.city, role: account.role, expiresAt: session.expiresAt } : null; } });
+export const deleteSession = internalMutation({ args: { tokenHash: v.string() }, handler: async (ctx, { tokenHash }) => { const session = await ctx.db.query("sessions").withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash)).first(); if (session) await ctx.db.delete(session._id); } });
